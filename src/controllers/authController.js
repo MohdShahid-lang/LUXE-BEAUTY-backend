@@ -67,7 +67,35 @@ const login = async (req, res) => {
   }
 };
 
+const me = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const normalizedEmail = user.email.trim().toLowerCase();
+    const effectiveRole =
+      user.role === 'admin' || normalizedEmail === ADMIN_EMAIL ? 'admin' : 'user';
+
+    if (normalizedEmail === ADMIN_EMAIL && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+
+    return res.json({
+      id: toId(user._id),
+      name: user.name,
+      role: effectiveRole
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   register,
-  login
+  login,
+  me
 };
